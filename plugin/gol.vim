@@ -208,6 +208,7 @@ function! gol#new_board() abort
   nnoremap <buffer><silent><space> :call gol#toggle_cell()<cr>
   nnoremap <buffer><silent>p :call gol#toggle_play_state()<cr>
   nnoremap <buffer><silent>a :call gol#place_block_prompt()<cr>
+  nnoremap <buffer><silent>i :call gol#place_block_prompt()<cr>
   nnoremap <buffer><silent>r :call gol#reset_state()<cr>
 endfunction
 
