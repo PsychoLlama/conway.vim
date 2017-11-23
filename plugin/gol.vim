@@ -121,6 +121,9 @@ let s:patterns = {
       \     [1, 1, 0, 0, 0, 0, 0, 0],
       \     [0, 1, 0, 0, 0, 1, 1, 1],
       \   ],
+      \   'line': [
+      \     [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1]
+      \   ],
       \ }
 
 function! s:position_pattern(pattern) abort
@@ -205,6 +208,7 @@ function! gol#new_board() abort
   nnoremap <buffer><silent><space> :call gol#toggle_cell()<cr>
   nnoremap <buffer><silent>p :call gol#toggle_play_state()<cr>
   nnoremap <buffer><silent>a :call gol#place_block_prompt()<cr>
+  nnoremap <buffer><silent>r :call gol#reset_state()<cr>
 endfunction
 
 function! gol#format_index(x, y) abort
@@ -335,7 +339,14 @@ function! gol#toggle_play_state() abort
   endif
 endfunction
 
+function! gol#reset_state() abort
+  call gol#pause()
+  let b:cells = {}
+  call gol#render_world(b:cells)
+endfunction
+
 command! GOL call gol#new_board()
 command! GOLPause call gol#pause()
 command! GOLPlay call gol#play()
+command! GOLReset call gol#reset_state()
 command! -nargs=1 GOLPattern call gol#place_pattern(<f-args>)
