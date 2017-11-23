@@ -1,15 +1,31 @@
 scriptencoding utf8
 
-function! gol#toggle_cell() abort
+function! s:get_cursor_position() abort
   let [l:buffer, l:line, l:col, l:off] = getpos('.')
-  let l:col -= 1
-  let l:line_contents = getline('.')
-  let l:is_alive = gol#cell_is_alive(l:col, l:line, b:cells)
-  let l:next_contents = split(l:line_contents, '\zs')
-  let l:next_contents[l:col] = gol#get_char(!l:is_alive)
-  let b:cells[gol#format_index(l:col, l:line)] = !l:is_alive
 
-  call setline(l:line, join(l:next_contents, ''))
+  " Compensate for 0-based indexing.
+  let l:col -= 1
+  let l:line -= 1
+
+  return [l:line, l:col]
+endfunction
+
+function! gol#toggle_cell() abort
+  let [l:y, l:x] = s:get_cursor_position()
+  let l:line_contents = getline('.')
+  let l:should_be_alive = !gol#cell_is_alive(l:x, l:y, b:cells)
+  let l:next_contents = split(l:line_contents, '\zs')
+  let l:next_contents[l:x] = gol#get_char(l:should_be_alive)
+  let l:cell_index = gol#format_index(l:x, l:y)
+  if should_be_alive
+    echo 'Should live: ' . l:cell_index
+    let b:cells[l:cell_index] = l:should_be_alive
+  else
+    call remove(b:cells, l:cell_index)
+  endif
+
+  " Line numbers start at 1.
+  call setline(l:y + 1, join(l:next_contents, ''))
 endfunction
 
 function! gol#to_world_state(cells) abort
@@ -66,7 +82,7 @@ function! gol#new_board() abort
         \   s:prefix([1, 1, 0, 0, 1, 1, 1]),
         \ ])
 
-  call gol#render_next_state(0)
+  call gol#play()
 
   nnoremap <buffer><silent><space> :call gol#toggle_cell()<cr>
 endfunction
@@ -160,18 +176,37 @@ function! gol#render_world(state) abort
   endfor
 endfunction
 
-function! gol#render_next_state(timer_id) abort
+function! gol#render_next_state() abort
+  let l:next_state = gol#generate_next_state(b:cells)
+  call gol#render_world(l:next_state)
+  let l:changed = b:cells != l:next_state
+  let b:cells = l:next_state
 
+  return l:changed
+endfunction
+
+function! gol#render_loop(timer_id) abort
   " Window closed.
-  if !exists('b:cells')
+  if !exists('b:cells') || b:paused
     return
   endif
 
-  let l:next_state = gol#generate_next_state(b:cells)
-  call gol#render_world(l:next_state)
-  let b:cells = l:next_state
+  if !gol#render_next_state()
+    return
+  endif
 
-  call timer_start(10, funcref('gol#render_next_state'))
+  call timer_start(10, funcref('gol#render_loop'))
+endfunction
+
+function! gol#pause() abort
+  let b:paused = 1
+endfunction
+
+function! gol#play() abort
+  let b:paused = 0
+  call gol#render_loop(0)
 endfunction
 
 command! GOL call gol#new_board()
+command! GOLPause call gol#pause()
+command! GOLPlay call gol#play()
