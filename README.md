@@ -1,4 +1,5 @@
 # vim-gol
+![Plugin Preview](preview.gif)
 
 A hacked-out implementation of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life), written in Vimscript.
 
