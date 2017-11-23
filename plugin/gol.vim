@@ -85,6 +85,7 @@ function! gol#new_board() abort
   call gol#play()
 
   nnoremap <buffer><silent><space> :call gol#toggle_cell()<cr>
+  nnoremap <buffer><silent>p :call gol#toggle_play_state()<cr>
 endfunction
 
 function! gol#format_index(x, y) abort
@@ -205,6 +206,14 @@ endfunction
 function! gol#play() abort
   let b:paused = 0
   call gol#render_loop(0)
+endfunction
+
+function! gol#toggle_play_state() abort
+  if b:paused
+    call gol#play()
+  else
+    call gol#pause()
+  endif
 endfunction
 
 command! GOL call gol#new_board()
