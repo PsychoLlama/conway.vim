@@ -2,12 +2,12 @@ scriptencoding utf8
 
 function! gol#toggle_cell() abort
   let [l:buffer, l:line, l:col, l:off] = getpos('.')
+  let l:col -= 1
   let l:line_contents = getline('.')
   let l:is_alive = gol#cell_is_alive(l:col, l:line, b:cells)
   let l:next_contents = split(l:line_contents, '\zs')
-  let l:x = (l:col + 1) / 2 - 1
-  let l:next_contents[l:x] = gol#get_char(!l:is_alive)
-  let b:cells[gol#format_index(l:x, l:line)] = !l:is_alive
+  let l:next_contents[l:col] = gol#get_char(!l:is_alive)
+  let b:cells[gol#format_index(l:col, l:line)] = !l:is_alive
 
   call setline(l:line, join(l:next_contents, ''))
 endfunction
@@ -42,7 +42,6 @@ let s:prefix = {cells -> map(range(&columns / 2), {-> 0}) + cells}
 function! gol#new_board() abort
   execute ':tabnew'
   setlocal listchars=
-  let l:prefix = range(20)
   let b:cells = gol#to_world_state([
         \   [],
         \   [],
