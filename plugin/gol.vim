@@ -18,7 +18,6 @@ function! gol#toggle_cell() abort
   let l:next_contents[l:x] = gol#get_char(l:should_be_alive)
   let l:cell_index = gol#format_index(l:x, l:y)
   if should_be_alive
-    echo 'Should live: ' . l:cell_index
     let b:cells[l:cell_index] = l:should_be_alive
   else
     call remove(b:cells, l:cell_index)
@@ -26,6 +25,148 @@ function! gol#toggle_cell() abort
 
   " Line numbers start at 1.
   call setline(l:y + 1, join(l:next_contents, ''))
+endfunction
+
+let s:patterns = {
+      \   'glider': [
+      \     [0, 0, 1],
+      \     [1, 0, 1],
+      \     [0, 1, 1],
+      \   ],
+      \   'blinker': [
+      \     [0, 1],
+      \     [0, 1],
+      \     [0, 1],
+      \   ],
+      \   'toad': [
+      \     [0, 1, 1, 1],
+      \     [1, 1, 1, 0],
+      \   ],
+      \   'spaceship': [
+      \     [0, 1, 1, 1, 1],
+      \     [1, 0, 0, 0, 1],
+      \     [0, 0, 0, 0, 1],
+      \     [1, 0, 0, 1, 0],
+      \   ],
+      \   'beacon': [
+      \     [1, 1, 0, 0],
+      \     [1, 0, 0, 0],
+      \     [0, 0, 0, 1],
+      \     [0, 0, 1, 1],
+      \   ],
+      \   'pulsar': [
+      \     [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+      \     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      \     [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+      \     [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+      \     [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+      \     [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+      \     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      \     [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+      \     [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+      \     [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+      \     [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+      \     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      \     [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+      \   ],
+      \   'pentadecathlon': [
+      \     [0, 1, 0],
+      \     [0, 1, 0],
+      \     [1, 0, 1],
+      \     [0, 1, 0],
+      \     [0, 1, 0],
+      \     [0, 1, 0],
+      \     [0, 1, 0],
+      \     [1, 0, 1],
+      \     [0, 1, 0],
+      \     [0, 1, 0],
+      \   ],
+      \   'block': [
+      \     [1, 1],
+      \     [1, 1],
+      \   ],
+      \   'beehive': [
+      \     [0, 1, 1, 0],
+      \     [1, 0, 0, 1],
+      \     [0, 1, 1, 0],
+      \   ],
+      \   'loaf': [
+      \     [0, 1, 1, 0],
+      \     [1, 0, 0, 1],
+      \     [0, 1, 0, 1],
+      \     [0, 0, 1, 0],
+      \   ],
+      \   'boat': [
+      \     [1, 1, 0],
+      \     [1, 0, 1],
+      \     [0, 1, 0],
+      \   ],
+      \   'tub': [
+      \     [0, 1, 0],
+      \     [1, 0, 1],
+      \     [0, 1, 0],
+      \   ],
+      \   'acorn': [
+      \     [0, 1, 0, 0, 0, 0, 0],
+      \     [0, 0, 0, 1, 0, 0, 0],
+      \     [1, 1, 0, 0, 1, 1, 1],
+      \   ],
+      \   'pentomeno': [
+      \     [0, 1, 1],
+      \     [1, 1, 0],
+      \     [0, 1, 1],
+      \   ],
+      \   'diehard': [
+      \     [0, 0, 0, 0, 0, 0, 1, 0],
+      \     [1, 1, 0, 0, 0, 0, 0, 0],
+      \     [0, 1, 0, 0, 0, 1, 1, 1],
+      \   ],
+      \ }
+
+function! s:position_pattern(pattern) abort
+  let l:pattern = copy(a:pattern)
+  let [l:y, l:x] = s:get_cursor_position()
+  let l:x_prefix = map(range(l:x), {-> 0})
+  let l:y_prefix = map(range(l:y), {-> []})
+
+  let l:line_index = 0
+  while l:line_index < len(l:pattern)
+    let l:row = l:pattern[l:line_index]
+    let l:pattern[l:line_index] = l:x_prefix + l:row
+    let l:line_index += 1
+  endwhile
+
+  return l:y_prefix + l:pattern
+endfunction
+
+function! s:apply_pattern(pattern, state) abort
+  for l:key in keys(a:pattern)
+    let a:state[l:key] = 1
+  endfor
+endfunction
+
+function! gol#place_pattern(name) abort
+  if !exists('s:patterns.' . a:name)
+    echo "\nPattern '" . a:name . "' isn't defined."
+    echo 'Perhaps you meant one of these?'
+    echo '[' . join(keys(s:patterns), ', ') . ']'
+    return
+  endif
+
+  let l:pattern = s:patterns[a:name]
+  let l:positioned_pattern = s:position_pattern(l:pattern)
+  let l:world_state = gol#to_world_state(l:positioned_pattern)
+  call s:apply_pattern(l:world_state, b:cells)
+  call gol#render_world(b:cells)
+endfunction
+
+function! gol#place_block_prompt() abort
+  let l:pattern_name = input('Pattern: ')
+
+  " Empty if the user presses <esc>
+  if !empty(l:pattern_name)
+    call gol#place_pattern(l:pattern_name)
+  endif
 endfunction
 
 function! gol#to_world_state(cells) abort
@@ -53,39 +194,17 @@ function! gol#to_world_state(cells) abort
   return l:state
 endfunction
 
-let s:prefix = {cells -> map(range(&columns / 2), {-> 0}) + cells}
-
 function! gol#new_board() abort
   execute ':tabnew'
   setlocal listchars=
-  let b:cells = gol#to_world_state([
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   [],
-        \   s:prefix([0, 1, 0, 0, 0, 0, 0]),
-        \   s:prefix([0, 0, 0, 1, 0, 0, 0]),
-        \   s:prefix([1, 1, 0, 0, 1, 1, 1]),
-        \ ])
+  let b:cells = {}
+  let b:paused = 1
 
-  call gol#play()
+  call gol#render_world(b:cells)
 
   nnoremap <buffer><silent><space> :call gol#toggle_cell()<cr>
   nnoremap <buffer><silent>p :call gol#toggle_play_state()<cr>
+  nnoremap <buffer><silent>a :call gol#place_block_prompt()<cr>
 endfunction
 
 function! gol#format_index(x, y) abort
@@ -219,3 +338,4 @@ endfunction
 command! GOL call gol#new_board()
 command! GOLPause call gol#pause()
 command! GOLPlay call gol#play()
+command! -nargs=1 GOLPattern call gol#place_pattern(<f-args>)
