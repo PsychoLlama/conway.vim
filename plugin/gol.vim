@@ -224,6 +224,10 @@ function! gol#new_board() abort
   nnoremap <buffer><silent>a :call gol#place_block_prompt()<cr>
   nnoremap <buffer><silent>i :call gol#place_block_prompt()<cr>
   nnoremap <buffer><silent>r :call gol#reset_state()<cr>
+
+  if exists('&signcolumn')
+    setlocal signcolumn=no
+  endif
 endfunction
 
 function! gol#format_index(x, y) abort
