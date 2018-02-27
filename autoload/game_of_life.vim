@@ -212,8 +212,10 @@ function! game_of_life#to_world_state(cells) abort
 endfunction
 
 function! game_of_life#new_board() abort
-  execute ':tabnew'
-  setlocal listchars=
+  tabnew Game of Life
+
+  setlocal buftype=nowrite bufhidden=delete signcolumn=no
+  setlocal listchars= nowriteany nobuflisted nonumber
   let b:cells = {}
   let b:paused = 1
 
